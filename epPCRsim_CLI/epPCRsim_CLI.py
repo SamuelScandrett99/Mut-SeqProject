@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+# Imports
 import sys
 import getopt
 import random
