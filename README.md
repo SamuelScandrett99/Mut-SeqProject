@@ -13,6 +13,8 @@ Older versions of Python3 can be used at risk of failure.
 Packages required for use of the simulator can be found in requirements.txt    
 
 ## 3. Demonstration
+
+### 3.1 CLI simulator
 Simply running the simulator with no parameters will produce an informative output
 ```
 python epPCRsim_CLI
