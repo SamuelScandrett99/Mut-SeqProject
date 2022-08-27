@@ -27,11 +27,11 @@ def main():
 	global INSc
 	global DELc
 	global log_output
-	global logFile
+	global log_file
 	global output
 	global output_name
 	global figures
-	global outputCovGraph
+	global output_cov_graph
 	global bases
 	global default
 	global mutdict
@@ -46,8 +46,8 @@ def main():
 	filteredMuts = [] 	# master list of all filtered mutations (1 mutation)
 	mutcoverage = []	# % coverage per run (1: 1%)
 	coverage = {}		# mutations per base location (1: ['A','C'])
-	masterMutDict = {}		# Dictionary of all sequences, rather than lists
-	filterMutDict = {}
+	master_mut_dict = {}		# Dictionary of all sequences, rather than lists
+	filter_mut_dict = {}
 
 
 	# Error-prone polymerase probabilities
@@ -70,7 +70,7 @@ def main():
 	output = False
 	output_name = None
 	figures = True
-	outputCovGraph = True
+	output_cov_graph = True
 	
 
 
@@ -81,7 +81,7 @@ def main():
 	argv = sys.argv[1:]
 
 	if len(sys.argv) <= 7:
-		titleScreen()
+		title_screen()
 		sys.exit(1)
 	
 	try:
@@ -99,7 +99,7 @@ def main():
 								 
 	except getopt.GetoptError as err:
 		print(err)
-		titleScreen()
+		title_screen()
 		sys.exit(2)	
 	
 	for opt, arg in opts:
@@ -127,9 +127,9 @@ def main():
 			output_name = arg
 		elif opt in ('-x', '--no-figures'):
 			figures = False	
-			outputCovGraph = False
+			output_cov_graph = False
 		elif opt in ('-y', '--no-coverage'):
-			outputCovGraph = False
+			output_cov_graph = False
 		elif opt in ('-s', '--snv'):
 			SNVc = Decimal(arg) 
 		elif opt in ('-d', '--deletion'):
@@ -139,14 +139,14 @@ def main():
 	
 	
 	#Write mutlog file#
-	logFileName = ('mutLog%s%s%s%s.txt' % (
+	log_file_name = ('mutLog%s%s%s%s.txt' % (
 			identifier,total_cycles,runs,error_rate))
 	if log_output == True:
-		logFile = open(logFileName, 'w')
+		log_file = open(log_file_name, 'w')
 
 	#Write fasta file
 	if output == True:
-		mutFasta = open(output_name, 'w')
+		mut_fasta = open(output_name, 'w')
 
 
 
@@ -160,80 +160,77 @@ def main():
 		print("Probability does not equal 1 (100%), adjust accordingly")
 		return
 
-	runningScreen()
+	running_screen()
 	run_iterator = 1
 	while run_iterator <= runs:
 		
-		logAppend("Run: %s" % (run_iterator))
+		log_append("Run: %s" % (run_iterator))
 		final_DNA, final_muts = cycle(sequence)	
 
 		# Store all final mutant sequences (final_muts) in dictionary w/ counter
-		# as needed for the ALL logoplot - masterMutDict
+		# as needed for the ALL logoplot - master_mut_dict
 		for item in final_muts:
-			dictCounter(item, masterMutDict)
+			dict_counter(item, master_mut_dict)
 
 		# Filter out all mutants != 1 mutation after each run & store in dictionary
 		# w/ counter again as needed for FILTERED logoplot - filteredMuts
-		if outputCovGraph == True:
-			filterMutDict, coverage = filtration(masterMutDict, filterMutDict, coverage, sequence)
-			mutcoverage = calculatingCoverage(coverage, mutcoverage, sequence)
+		if output_cov_graph == True:
+			filter_mut_dict, coverage = filtration(master_mut_dict, filter_mut_dict, coverage, sequence)
+			mutcoverage = calculating_coverage(coverage, mutcoverage, sequence)
 
 		# If output is enabled, write the DNA at the end of each run to FASTA file
 		mutant = 1
 		if output == True:
-			fastaSave(final_DNA, identifier, mutFasta, mutant)
+			fasta_save(final_DNA, identifier, mut_fasta, mutant)
 			
 
 		run_iterator = run_iterator + 1
 	
 	
 	#This gives end coverage rather than per run - faster
-	if outputCovGraph == False:
-		filterMutDict, coverage = filtration(masterMutDict, filterMutDict, coverage, sequence)
-		mutcoverage = calculatingCoverage(coverage, mutcoverage, sequence)
-		covName = None
+	if output_cov_graph == False:
+		filter_mut_dict, coverage = filtration(master_mut_dict, filter_mut_dict, coverage, sequence)
+		mutcoverage = calculating_coverage(coverage, mutcoverage, sequence)
+		cov_name = None
 	
-	if outputCovGraph == True:
-		covName = runs_coverage(mutcoverage, identifier)
+	if output_cov_graph == True:
+		cov_name = runs_coverage(mutcoverage, identifier)
 
 	
 	#Figures (default is true)
 	if figures == True:
-		mpsName = mutPerSeq(final_muts, identifier)	
-		pmcName = point_mutcount(identifier)
-		lpALLName = logoplot(masterMutDict, identifier, "ALL")
-		lpFILTName = logoplot(filterMutDict, identifier, "FILTERED")
-		mpmutsName = mutplot(filterMutDict, mutpositions, None, identifier, "muts")
-		mpbothName = mutplot(filterMutDict, mutpositions, nopositions, identifier, "both")
+		mps_name = mut_per_seq(final_muts, identifier)	
+		pmc_name = point_mutcount(identifier)
+		lp_all_name = logoplot(master_mut_dict, identifier, "ALL")
+		lp_filt_name = logoplot(filter_mut_dict, identifier, "FILTERED")
+		mp_muts_name = mutplot(filter_mut_dict, mutpositions, None, identifier, "muts")
+		mp_both_name = mutplot(filter_mut_dict, mutpositions, nopositions, identifier, "both")
 		if mutcoverage[-1] != 100:
-			uncoveredList = invertingLogo(coverage, sequence, bases)
-			lpINVName = logoplot(uncoveredList, identifier, "FILTERED_INVERTED")
+			uncovered_list = inverting_logo(coverage, sequence, bases)
+			lp_inv_name = logoplot(uncovered_list, identifier, "FILTERED_INVERTED")
 	else:
-		mpsName = None
-		pmcName = None
-		lpALLName = None
-		lpFILTName = None
-		mpmutsName = None
-		mpbothName = None
-		lpINVName = None
-
-	#if outputCovGraph == True:
-	#	covName = runs_coverage(mutcoverage, identifier)	
+		mps_name = None
+		pmc_name = None
+		lp_all_name = None
+		lp_filt_name = None
+		mp_muts_name = None
+		mp_both_name = None
+		lp_inv_name = None
 
 
 	#Add % coverage to optional log file
-	lengthMaster = dictLens(masterMutDict)
-	logAppend("\nTotal mutants: %s" % (lengthMaster))
-	lengthFilter = dictLens(filterMutDict)
-	logAppend("Total filtered mutants (with one mutation): %s" % ((lengthFilter)))
-	logAppend("%s cycles + %s runs gives %.2f%% coverage" % (
+	length_master = dict_lens(master_mut_dict)
+	log_append("\nTotal mutants: %s" % (length_master))
+	length_filter = dict_lens(filter_mut_dict)
+	log_append("Total filtered mutants (with one mutation): %s" % ((length_filter)))
+	log_append("%s cycles + %s runs gives %.2f%% coverage" % (
 		total_cycles, runs, mutcoverage[-1])) 
 	
-	outputScreen(lengthMaster, lengthFilter, mutcoverage, mpsName, pmcName, lpALLName, lpFILTName, 
-		mpmutsName, mpbothName, lpINVName, covName, logFileName)
+	output_screen(length_master, length_filter, mutcoverage, mps_name, pmc_name, lp_all_name, lp_filt_name, 
+		mp_muts_name, mp_both_name, lp_inv_name, cov_name, log_file_name)
 	
 
-def cycle(seqDNA):
+def cycle(seq_DNA):
 	
 	all_seqs = []		# all products from each cycle (NOT INCLUDING START SEQ)
 	all_seqs_mut = []	# all products only showing mutations
@@ -248,21 +245,21 @@ def cycle(seqDNA):
 
 	cycle_no = 1	# iterator for cycle no.
 	
-	temp_list1.append(seqDNA)
+	temp_list1.append(seq_DNA)
 	
-	new = "." * len(seqDNA)
+	new = "." * len(seq_DNA)
 	mut_temp_list1.append(new)
 	
 	while cycle_no <= total_cycles:
-		logAppend("Cycle: %s" % (cycle_no))
+		log_append("Cycle: %s" % (cycle_no))
 		
 		for each, mut_each in zip(temp_list1, mut_temp_list1):	
 			
 			copy = each
-			mutCopy = mut_each
+			mut_copy = mut_each
 			
 			all_seqs.append(copy)
-			all_seqs_mut.append(mutCopy)
+			all_seqs_mut.append(mut_copy)
 			
 			temp_list2.append(all_seqs[-1])
 			mut_temp_list2.append(all_seqs_mut[-1])
@@ -289,7 +286,7 @@ def cycle(seqDNA):
 	return output_DNA, output_muts	
 	
 
-def mutation(insert, mutSeq, polBiases, allSeqs, allSeqsMuts):
+def mutation(insert, mut_seq, pol_biases, all_seqs, all_seqs_muts):
 		
 	gene_length = len(insert)
 	n = 1
@@ -323,26 +320,26 @@ def mutation(insert, mutSeq, polBiases, allSeqs, allSeqsMuts):
 			
 			# Point mutation
 			if SNVlower <= m <= SNVupper:
-				point = random.choices(bases, weights=polBiases)
+				point = random.choices(bases, weights=pol_biases)
 				point = str(point[0])
 				while True:			
 					if point == nucleotide:
-						point = random.choices(bases, weights=polBiases)
+						point = random.choices(bases, weights=pol_biases)
 						point = str(point[0])
 					else:
 						break
 
 				changed = nucleotide + " to " + point
-				dictCounter(changed, mutdict)	
-				logAppend("Point mutation %s at %s" % (changed, n-1))	
+				dict_counter(changed, mutdict)	
+				log_append("Point mutation %s at %s" % (changed, n-1))	
 				insert = insert[:n-1] + point + insert[n:] 
-				mutSeq = mutSeq[:n-1] + point + mutSeq[n:] 
+				mut_seq = mut_seq[:n-1] + point + mut_seq[n:] 
 				
 			# Deletion mutation	
 			elif DELlower <= m <= DELupper:
-				logAppend("Deletion at %s" % (n-1))
+				log_append("Deletion at %s" % (n-1))
 				insert = insert[:n-1] + insert[n:]
-				mutSeq = mutSeq[:n-1] + mutSeq[n:]
+				mut_seq = mut_seq[:n-1] + mut_seq[n:]
 				gene_length -= 1
 				
 			# Insertion mutation	
@@ -352,56 +349,56 @@ def mutation(insert, mutSeq, polBiases, allSeqs, allSeqsMuts):
 				befaft = random.randint(1,2)
 				if befaft == 1:		# insert before n
 					insert = insert[:n-1] + ins + insert[n-1:]
-					mutSeq = mutSeq[:n-1] + ins + mutSeq[n-1:]
-					logAppend("Insertion of %s before %s" % (ins, n-1))
+					mut_seq = mut_seq[:n-1] + ins + mut_seq[n-1:]
+					log_append("Insertion of %s before %s" % (ins, n-1))
 				elif befaft == 2:	# insert after n
 					insert = insert[:n] + ins + insert[n:]
-					mutSeq = mutSeq[:n] + ins + mutSeq[n:]
-					logAppend("Insertion of %s after %s" % (ins, n-1))	 
+					mut_seq = mut_seq[:n] + ins + mut_seq[n:]
+					log_append("Insertion of %s after %s" % (ins, n-1))	 
 				gene_length += 1
 	
 		n += 1			
-	allSeqs.append(insert)
-	allSeqsMuts.append(mutSeq)			
+	all_seqs.append(insert)
+	all_seqs_muts.append(mut_seq)			
 
 
-def fastaSave(selection, mutName, fileName, mutNo):
+def fasta_save(selection, mut_name, file_name, mut_no):
 	
 	wrapping = 60
 	
 	if output == True:
 		for each in selection:
 	
-			name = (">%s_M%s" % (mutName, mutNo))
-			fileName.write(name + "\n")
+			name = (">%s_M%s" % (mut_name, mut_no))
+			file_name.write(name + "\n")
 		
 			for x in range(0, len(each), wrapping):
-				fileName.write(each[x:x + wrapping] + "\n")
-			mutNo += 1
+				file_name.write(each[x:x + wrapping] + "\n")
+			mut_no += 1
 
-def logAppend(text):
+def log_append(text):
 	
 	if log_output == True:
-		logFile.write(text + "\n")
+		log_file.write(text + "\n")
 			
 
-def dictLens(dict_to_use):
+def dict_lens(dict_to_use):
 	
-	tempList = []
+	temp_list = []
 	for item, count in dict_to_use.items():
-		tempList.extend([item for i in range(count)])
+		temp_list.extend([item for i in range(count)])
 
-	length = len(tempList)
+	length = len(temp_list)
 
 	return length
 	
 
-def filtration(currentDict, futureDict, locDict, insert):
+def filtration(current_dict, future_dict, loc_dict, insert):
 
 	# Going through masterDict and appending to filtered dictionary
-	futureDict = {}
-	locDict = {}
-	for item, count in currentDict.items():
+	future_dict = {}
+	loc_dict = {}
+	for item, count in current_dict.items():
 		mutcount = 0
 		falsemutcount = False
 		for coord, (base, original) in enumerate(zip(item, insert)):
@@ -413,44 +410,44 @@ def filtration(currentDict, futureDict, locDict, insert):
 					falsemutcount = True
 			
 		if mutcount == 1 and len(item) == len(insert) and falsemutcount == False:
-			futureDict[item] = count
+			future_dict[item] = count
 
-			if 1+pos not in locDict:
-				locDict[1+pos] = list()
-			if base not in locDict[1+pos]:
-				locDict[1+pos].append(mut)
+			if 1+pos not in loc_dict:
+				loc_dict[1+pos] = list()
+			if base not in loc_dict[1+pos]:
+				loc_dict[1+pos].append(mut)
 
-	return futureDict, locDict
+	return future_dict, loc_dict
 	
 	
-def calculatingCoverage(locDict, runningCov, insert):
+def calculating_coverage(loc_dict, running_cov, insert):
 
 	# Calculate cov each run
 	count = 0
-	for each, each2 in locDict.items():
+	for each, each2 in loc_dict.items():
 		count += len(each2)
 	
 	cov_all = len(insert) * 3
 	cov = (count/cov_all) * 100
-	runningCov.append(cov)
+	running_cov.append(cov)
 
-	return runningCov
+	return running_cov
 
 
-def invertingLogo(dictOfBaseCov, insert, nucleotides):
+def inverting_logo(dict_of_base_cov, insert, nucleotides):
 
     # calculating every possible base change
-    totalCov = {}
+    total_cov = {}
     for loc, b in enumerate(insert):
-        totalCov[1+loc] = list()
+        total_cov[1+loc] = list()
         for each in nucleotides:
             if each != b:
-                totalCov[1+loc].append(each)
+                total_cov[1+loc].append(each)
 
     # Dictionary of bases not changed to    
     uncovered = {}
-    for (a, b) in dictOfBaseCov.items():
-        for (x, y) in totalCov.items():
+    for (a, b) in dict_of_base_cov.items():
+        for (x, y) in total_cov.items():
             if a == x:
                 difference = (list(set(y) - set(b)))
                 uncovered[a] = difference
@@ -473,7 +470,7 @@ def invertingLogo(dictOfBaseCov, insert, nucleotides):
     return uncovlist
 
 
-def titleScreen():
+def title_screen():
 
 	print("\n\n\t\t"+"-"*41)
 	print("\n\t\t\tError-Prone PCR Simulator")
@@ -495,7 +492,7 @@ def titleScreen():
 -y\t--no-coverage\t\t\t\tDisable production of coverage graph (FASTER)\n""")
 
 
-def runningScreen():
+def running_screen():
 	
 	print("\n\n\t\t"+"-"*41)
 	print("\n\t\t\tError-Prone PCR Simulator")
@@ -510,11 +507,11 @@ def runningScreen():
 	print("\tDeletion probability:\t%s" % (DELc))
 	print("\tOutput log file:\t%s" % (log_output))
 	print("\tProduce figures:\t%s" % (figures))
-	print("\tProduce coverage graph:\t%s" % (outputCovGraph))
+	print("\tProduce coverage graph:\t%s" % (output_cov_graph))
 	print("\tOutput fasta:\t\t%s" % (output))
 	
 
-def outputScreen(totalMuts, oneMutMuts, perCov, mutperseqName, pointcountName, logoALL, logoFILT, 
+def output_screen(totalMuts, oneMutMuts, perCov, mut_per_seqName, pointcountName, logoALL, logoFILT, 
 	mutplotmuts, mutplotboth, logoINV, covg, logF):
 	
 	print("\nCoverage:")
@@ -527,7 +524,7 @@ def outputScreen(totalMuts, oneMutMuts, perCov, mutperseqName, pointcountName, l
 	if output == True:
 		print("\tMutant fasta:\t\t%s" % (output_name))
 	if figures == True:
-		print("\tMutations per seq:\t%s" % (mutperseqName))
+		print("\tMutations per seq:\t%s" % (mut_per_seqName))
 		print("\tSNV count:\t\t%s" % (pointcountName))
 		print("\tMutation plots:\t\t%s" % (mutplotmuts))
 		print("\t\t\t\t%s" % (mutplotboth))
@@ -535,27 +532,27 @@ def outputScreen(totalMuts, oneMutMuts, perCov, mutperseqName, pointcountName, l
 		print("\t\t\t\t%s" % (logoFILT))
 	if perCov[-1] != 100 and logoINV != None:
 		print("\t\t\t\t%s" % (logoINV))
-	if outputCovGraph == True:
+	if output_cov_graph == True:
 		print("\tCoverage:\t\t%s" % (covg))
 	if log_output == True:
 		print("\tLog file:\t\t%s" % (logF))
 	if (output == False and figures == False and 
-		outputCovGraph == False and log_output == False):
+		output_cov_graph == False and log_output == False):
 		print("\tNone")
 	print("")	
 
 	
-def dictCounter(dictItem, dictName):
+def dict_counter(dict_item, dict_name):
 	
 	# if not in dict then add and make value = 0
 	# if is in dict then value will increase by 1
 	
-	if dictItem not in dictName.keys():
-		dictName[dictItem] = 0
-	dictName[dictItem] += 1
+	if dict_item not in dict_name.keys():
+		dict_name[dict_item] = 0
+	dict_name[dict_item] += 1
 
 
-def logoplot(input_mutants, geneIdentifier, name):
+def logoplot(input_mutants, gene_identifier, name):
 
 	# If the input is a dict, if not treat as a list
 	list_of_mutants = []
@@ -580,7 +577,7 @@ def logoplot(input_mutants, geneIdentifier, name):
 	while length != no_logos*100:
 		
 		im_name = ('%s_logo%s%s-%s_%sc%sr%s.jpg' % (
-			geneIdentifier, name, length, length+100, 
+			gene_identifier, name, length, length+100, 
 			total_cycles, runs, error_rate))
 		im_list.append(im_name)
 		
@@ -594,7 +591,7 @@ def logoplot(input_mutants, geneIdentifier, name):
 	
 		seqs_logo.ax.set_xlabel("Nucleotide number")
 		seqs_logo.ax.set_title("Logo plot of %s bases %s to %s" % (
-					geneIdentifier, length, (length+100)))
+					gene_identifier, length, (length+100)))
 		
 		plt.savefig(im_name)	
 		#plt.show()
@@ -607,17 +604,17 @@ def logoplot(input_mutants, geneIdentifier, name):
 	min_shape = sorted([(np.sum(x.size), x.size) for x in o])[0][1]
 	ims_all = np.vstack([np.asarray(x.resize(min_shape)) for x in o])
 	ims_all = PIL.Image.fromarray(ims_all)
-	figureName = ('logoCompiled%s_%sc%sr%s_%s.jpg'
-		% (name, total_cycles, runs, error_rate, geneIdentifier))
-	ims_all.save(figureName)
+	figure_name = ('logoCompiled%s_%sc%sr%s_%s.jpg'
+		% (name, total_cycles, runs, error_rate, gene_identifier))
+	ims_all.save(figure_name)
 	
 	# Delete individual logos after compiling
 	for individual_logo in im_list:
 		os.remove(individual_logo)
 
-	return figureName
+	return figure_name
 
-def point_mutcount(geneIdentifier):
+def point_mutcount(gene_identifier):
 	
 	mutdict_percent = {}
 	total = sum(mutdict.values())
@@ -636,30 +633,30 @@ def point_mutcount(geneIdentifier):
 	plt.xlabel('Point mutation')
 	plt.ylabel('Percentage of mutations (%)')
 	plt.xticks(rotation = 'vertical')	
-	figureName = ('SNVcount_%sc%sr%s_%s.svg' % (total_cycles, runs, 
-		error_rate, geneIdentifier))
-	plt.savefig(figureName)
+	figure_name = ('SNVcount_%sc%sr%s_%s.svg' % (total_cycles, runs, 
+		error_rate, gene_identifier))
+	plt.savefig(figure_name)
 	plt.close()
 	
-	return figureName
+	return figure_name
 	
-def mutPerSeq(mps_name, geneIdentifier):
+def mut_per_seq(mps_name, gene_identifier):
 	
-	mutperseq = {}
+	mut_per_seq = {}
 	
 	for per_seq in mps_name:
 		count = 0
 		for base in per_seq:
 			if base.isupper():
 				count += 1
-		if count in mutperseq:
-			mutperseq[count] += 1
+		if count in mut_per_seq:
+			mut_per_seq[count] += 1
 		else:
-			mutperseq[count] = 1
+			mut_per_seq[count] = 1
 	
 	perpercent = {}
-	total = sum(mutperseq.values())
-	for entry, p in mutperseq.items():
+	total = sum(mut_per_seq.values())
+	for entry, p in mut_per_seq.items():
 		percent = p * 100 / total
 		perpercent[entry] = percent
 	
@@ -670,50 +667,50 @@ def mutPerSeq(mps_name, geneIdentifier):
 	plt.xlabel("Number of mutations")
 	plt.ylabel("Percentage of sequences")
 	plt.grid()
-	figureName = ('mutPerSeq_%sc%sr%s_%s.svg' % (total_cycles, runs, 
-		error_rate, geneIdentifier))
-	plt.savefig(figureName)
+	figure_name = ('mut_per_seq_%sc%sr%s_%s.svg' % (total_cycles, runs, 
+		error_rate, gene_identifier))
+	plt.savefig(figure_name)
 	plt.close()
 
-	return figureName
+	return figure_name
 	
 		
-def mutplot(baseDict, posDict, noposDict, geneIdentifier, name):
+def mutplot(base_dict, pos_dict, nopos_dict, gene_identifier, name):
 	
 	temp = []
-	for item, count in baseDict.items():
+	for item, count in base_dict.items():
 		temp.extend([item for i in range(count)])
 
 	# count abundance of mutations at positions (mutPlot)
 	for each in temp:
 		for pos, base in enumerate(each):
 			if base.isupper():
-				dictCounter(1+pos, posDict)
-			elif noposDict != None:
-				dictCounter(1+pos, noposDict)
+				dict_counter(1+pos, pos_dict)
+			elif nopos_dict != None:
+				dict_counter(1+pos, nopos_dict)
 
 	plt.figure(figsize=(16,8))	
-	plt.plot(posDict.keys(), posDict.values(), 'kD', ms = 1.5)
-	if noposDict != None:
-		plt.plot(noposDict.keys(), noposDict.values(), 'rD', ms = 1.5)
+	plt.plot(pos_dict.keys(), pos_dict.values(), 'kD', ms = 1.5)
+	if nopos_dict != None:
+		plt.plot(nopos_dict.keys(), nopos_dict.values(), 'rD', ms = 1.5)
 	plt.xlabel("Nucleotide position")
 	plt.ylabel("Frequency of mutations")
 	plt.title("Total mutations for each nucleotide position")
-	figureName = ('mutPlotFILTERED%s_%sc%sr%s_%s.svg' % (name,
-		total_cycles, runs, error_rate, geneIdentifier))
-	plt.savefig(figureName)
+	figure_name = ('mutPlotFILTERED%s_%sc%sr%s_%s.svg' % (name,
+		total_cycles, runs, error_rate, gene_identifier))
+	plt.savefig(figure_name)
 	plt.close()
 
-	return figureName
+	return figure_name
 	
 
-def runs_coverage(covDict, geneIdentifier):
+def runs_coverage(cov_dict, gene_identifier):
 	
 	x = range(runs)
 	count = 0
-	plt.plot(x, covDict)
+	plt.plot(x, cov_dict)
 	
-	for each in covDict:
+	for each in cov_dict:
 		count += 1
 		if each == 100:
 			maxcov = each
@@ -732,12 +729,12 @@ def runs_coverage(covDict, geneIdentifier):
 		label = '99% coverage')
 	plt.axhline(y=95, color = 'gold', ls = '--', alpha = 0.5,
 		label = '95% coverage')
-	figureName = ('coverage_%sc%sr%s_%s.svg' % (total_cycles, runs, 
-		error_rate, geneIdentifier))
-	plt.savefig(figureName)
+	figure_name = ('coverage_%sc%sr%s_%s.svg' % (total_cycles, runs, 
+		error_rate, gene_identifier))
+	plt.savefig(figure_name)
 	plt.close()
 	
-	return figureName
+	return figure_name
 
 
 main() 
